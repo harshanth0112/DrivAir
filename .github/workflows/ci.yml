@@ -1,0 +1,65 @@
+name: DRIVAIR Continuous Integration & Verification
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-test:
+    name: Backend Test Suite & Security Invariants
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Backend Regression Test Suite
+        run: npm run test:all
+        env:
+          NODE_ENV: test
+          PORT: 5000
+          MONGODB_URI: mongodb://127.0.0.1:27017/drivair_test
+
+  frontend-build:
+    name: Frontend Production Build Verification
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Vite Production Bundle
+        run: npm run build
+        env:
+          VITE_API_URL: https://drivair-api.onrender.com/api/v1
+          VITE_SOCKET_URL: https://drivair-api.onrender.com

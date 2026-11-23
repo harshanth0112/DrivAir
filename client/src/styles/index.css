@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --color-brand: #FDE047;         /* Cyber Yellow */
+  --color-brand-hover: #FACC15;   /* Hover Yellow */
+  --color-brand-soft: #FEF3A6;    /* Soft Yellow */
+  --color-canvas: #0A0A0A;        /* Deep Onyx background */
+  --color-surface: #171717;       /* Charcoal cards and panels */
+  --color-elevated: #202020;      /* Elevated popovers and drawers */
+  --color-subtle: #262626;        /* Inputs, table rows, secondary controls */
+  --color-text: #FFFFFF;          /* High contrast primary text */
+  --color-text-secondary: #B8B8B8;/* Supporting text */
+  --color-text-muted: #858585;    /* Hints and metadata */
+  --color-border: rgba(255, 255, 255, 0.12); /* Standard dark surface borders */
+  --color-border-glass: rgba(255, 255, 255, 0.20); /* Glass highlights */
+  --radius-card: 24px;
+  --radius-glass: 32px;
+  --radius-pill: 9999px;
+}
+
+html {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+  min-width: 320px;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Accessible focus visible outlines */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+
+/* Reduced motion accessibility rule */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Tabular numerals for prices, numbers, and dates */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dark theme custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Leaflet dark-friendly map container */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 1.5rem;
+  z-index: 10;
+  background: #171717;
+}

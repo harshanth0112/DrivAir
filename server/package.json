@@ -1,0 +1,33 @@
+{
+  "name": "drivair-server",
+  "version": "1.0.0",
+  "description": "Backend API for DRIVAIR B2B contract marketplace",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node test/runTests.js",
+    "test:gps": "node test/twoAccountGpsTest.js",
+    "test:auth": "node test/authSecurityTest.js",
+    "test:notifications": "node test/notificationsTest.js",
+    "test:notifications:two-account": "node test/twoAccountNotificationTest.js",
+    "test:security": "node test/securityPhase2Test.js",
+    "test:workflow": "node test/workflowBusinessTest.js",
+    "test:concurrency": "node test/concurrencyTest.js",
+    "test:all": "node test/runTests.js && node test/twoAccountGpsTest.js && node test/authSecurityTest.js && node test/notificationsTest.js && node test/twoAccountNotificationTest.js && node test/securityPhase2Test.js && node test/workflowBusinessTest.js && node test/concurrencyTest.js"
+  },
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "firebase-admin": "^13.1.0",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.10.1",
+    "multer": "^2.5.0",
+    "socket.io": "^4.8.1",
+    "zod": "^3.24.2"
+  }
+}
