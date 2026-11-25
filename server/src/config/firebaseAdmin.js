@@ -9,12 +9,11 @@ export const getFirebaseAdmin = () => {
   if (initAttempted) return null;
   initAttempted = true;
 
-  const hasFullCredentials =
-    env.FIREBASE_PROJECT_ID &&
-    env.FIREBASE_CLIENT_EMAIL &&
-    env.FIREBASE_PRIVATE_KEY &&
-    env.FIREBASE_CLIENT_EMAIL.includes('@') &&
-    env.FIREBASE_PRIVATE_KEY.includes('BEGIN PRIVATE KEY');
+  const hasProjectId = Boolean(env.FIREBASE_PROJECT_ID);
+  const hasClientEmail = Boolean(env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_CLIENT_EMAIL.includes('@'));
+  const hasPrivateKey = Boolean(env.FIREBASE_PRIVATE_KEY && env.FIREBASE_PRIVATE_KEY.includes('BEGIN PRIVATE KEY'));
+
+  const hasFullCredentials = hasProjectId && hasClientEmail && hasPrivateKey;
 
   if (hasFullCredentials) {
     try {
@@ -30,9 +29,16 @@ export const getFirebaseAdmin = () => {
       console.error(`[Firebase Admin Error] Initialization failed: ${error.message}`);
     }
   } else {
+    const missingParts = [];
+    if (!hasProjectId) missingParts.push('FIREBASE_PROJECT_ID');
+    if (!hasClientEmail) missingParts.push('FIREBASE_CLIENT_EMAIL');
+    if (!hasPrivateKey) missingParts.push('FIREBASE_PRIVATE_KEY (missing or lacks "BEGIN PRIVATE KEY")');
+
+    console.error(`[Firebase Admin Diagnostics] Missing or invalid credentials: ${missingParts.join(', ')}`);
+
     if (env.NODE_ENV === 'production') {
       throw new Error(
-        'FATAL: Production mode requires verified Firebase Service Account credentials. Unsafe bypasses are disabled.'
+        `FATAL: Production mode requires verified Firebase Service Account credentials. Missing: ${missingParts.join(', ')}`
       );
     }
     console.warn('[Firebase Admin] ⚠️  Development mode active without service account credentials.');
