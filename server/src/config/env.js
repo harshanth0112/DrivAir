@@ -38,6 +38,18 @@ if (rawEnv.NODE_ENV === 'production') {
   }
 }
 
+const cleanPrivateKey = (key) => {
+  if (!key) return '';
+  let cleaned = key.trim();
+  // Strip enclosing quotes if present (e.g. from env files or dashboard UI)
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  // Replace literal \n with actual newlines
+  cleaned = cleaned.replace(/\\n/g, '\n');
+  return cleaned;
+};
+
 export const env = {
   NODE_ENV: rawEnv.NODE_ENV || 'development',
   PORT: Number(rawEnv.PORT) || 5000,
@@ -45,7 +57,7 @@ export const env = {
   MONGODB_URI: rawEnv.MONGODB_URI || 'mongodb://127.0.0.1:27017/drivair',
   FIREBASE_PROJECT_ID: rawEnv.FIREBASE_PROJECT_ID || '',
   FIREBASE_CLIENT_EMAIL: rawEnv.FIREBASE_CLIENT_EMAIL || '',
-  FIREBASE_PRIVATE_KEY: rawEnv.FIREBASE_PRIVATE_KEY ? rawEnv.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : '',
+  FIREBASE_PRIVATE_KEY: cleanPrivateKey(rawEnv.FIREBASE_PRIVATE_KEY),
   CLOUDINARY_CLOUD_NAME: rawEnv.CLOUDINARY_CLOUD_NAME || '',
   CLOUDINARY_API_KEY: rawEnv.CLOUDINARY_API_KEY || '',
   CLOUDINARY_API_SECRET: rawEnv.CLOUDINARY_API_SECRET || '',

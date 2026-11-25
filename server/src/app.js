@@ -27,6 +27,9 @@ import trackingRoutes from './modules/tracking/tracking.routes.js';
 
 const app = express();
 
+// Enable trust proxy for cloud hosting behind reverse proxies (Render, Cloudflare, etc.)
+app.set('trust proxy', 1);
+
 // Security HTTP headers
 app.use(helmet());
 
