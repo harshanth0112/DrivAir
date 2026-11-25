@@ -15,6 +15,7 @@ import vehicleOwnerRoutes from './modules/vehicleOwners/vehicleOwners.routes.js'
 import vehicleRoutes from './modules/vehicles/vehicles.routes.js';
 import documentRoutes from './modules/documents/documents.routes.js';
 import marketplaceRoutes from './modules/marketplace/marketplace.routes.js';
+import travelListingRoutes from './modules/marketplace/travelListing.routes.js';
 import bidRoutes from './modules/bids/bids.routes.js';
 import directHiringRoutes from './modules/directHiring/directHiring.routes.js';
 import chatRoutes from './modules/chat/chat.routes.js';
@@ -29,7 +30,7 @@ const app = express();
 // Security HTTP headers
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - strictly locked to configured CLIENT_URL
 app.use(
   cors({
     origin: env.CLIENT_URL,
@@ -92,6 +93,8 @@ app.use('/api/v1/vehicle-owners', vehicleOwnerRoutes);
 app.use('/api/v1/vehicles', vehicleRoutes);
 app.use('/api/v1/documents', documentRoutes);
 app.use('/api/v1/contract-posts', marketplaceRoutes);
+app.use('/api/v1/travel-listings', travelListingRoutes);
+app.use('/api/travel-listings', travelListingRoutes);
 app.use('/api/v1/bids', bidRoutes);
 app.use('/api/v1/direct-hiring', directHiringRoutes);
 app.use('/api/v1/chat', chatRoutes);

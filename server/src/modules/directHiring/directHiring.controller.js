@@ -4,6 +4,9 @@ import User from '../users/users.model.js';
 import Driver from '../drivers/drivers.model.js';
 import VehicleOwner from '../vehicleOwners/vehicleOwners.model.js';
 import Contract from '../contracts/contracts.model.js';
+import { Vehicle } from '../vehicles/vehicles.model.js';
+import { TravelListing } from '../marketplace/travelListing.model.js';
+import { VehicleAvailability } from '../marketplace/vehicleAvailability.model.js';
 import mongoose from 'mongoose';
 import { AppError } from '../../middleware/errorHandler.js';
 import { createNotification, createNotifications } from '../notifications/notifications.service.js';
@@ -63,6 +66,18 @@ export const createDirectOffer = async (req, res, next) => {
       return next(new AppError('Forbidden: You cannot send a direct hiring offer to yourself', 400));
     }
 
+    // If vehicleId and dates are provided, check for conflicts in availability ledger
+    if (req.body.vehicleId && req.body.startDate && req.body.endDate) {
+      const isConflict = await VehicleAvailability.hasOverlap(
+        req.body.vehicleId,
+        req.body.startDate,
+        req.body.endDate
+      );
+      if (isConflict) {
+        return next(new AppError('The selected vehicle is already reserved or booked for the requested dates', 409));
+      }
+    }
+
     const offer = await ContractRequest.create({
       companyId: company._id,
       createdBy: req.user._id,
@@ -90,7 +105,8 @@ export const getReceivedOffers = async (req, res, next) => {
   try {
     const offers = await ContractRequest.find({ providerId: req.user._id })
       .populate('companyId', 'companyName verificationStatus address contactPerson')
-      .populate('vehicleId', 'vehicleNumber vehicleType')
+      .populate('vehicleId', 'vehicleNumber vehicleType category')
+      .populate('travelListingId', 'title serviceCategory origin destination pricing')
       .sort({ createdAt: -1 });
 
     res.status(200).json({ status: 'success', results: offers.length, data: { offers } });
@@ -108,7 +124,8 @@ export const getSentOffers = async (req, res, next) => {
 
     const offers = await ContractRequest.find({ companyId: company._id })
       .populate('providerId', 'fullName email phone role')
-      .populate('vehicleId', 'vehicleNumber vehicleType')
+      .populate('vehicleId', 'vehicleNumber vehicleType category')
+      .populate('travelListingId', 'title serviceCategory origin destination pricing')
       .sort({ createdAt: -1 });
 
     res.status(200).json({ status: 'success', results: offers.length, data: { offers } });
@@ -130,6 +147,30 @@ export const acceptDirectOffer = async (req, res, next) => {
     const opts = session ? { session } : {};
 
     try {
+      // Find offer first to check dates & vehicle
+      const existing = await ContractRequest.findOne({ _id: req.params.id, providerId: req.user._id });
+      if (!existing) {
+        throw new AppError('Offer not found or unauthorized to accept', 404);
+      }
+      if (existing.status === 'accepted') {
+        throw new AppError('This offer has already been accepted', 409);
+      }
+      if (!['pending', 'negotiating'].includes(existing.status)) {
+        throw new AppError(`Cannot accept offer with status: ${existing.status}`, 400);
+      }
+
+      // If vehicle & dates are involved, re-check overlap safely
+      if (existing.vehicleId && existing.startDate && existing.endDate) {
+        const hasConflict = await VehicleAvailability.hasOverlap(
+          existing.vehicleId,
+          existing.startDate,
+          existing.endDate
+        );
+        if (hasConflict) {
+          throw new AppError('Vehicle has a conflicting confirmed booking for these dates', 409);
+        }
+      }
+
       const offer = await ContractRequest.findOneAndUpdate(
         {
           _id: req.params.id,
@@ -147,15 +188,7 @@ export const acceptDirectOffer = async (req, res, next) => {
       ).populate('companyId');
 
       if (!offer) {
-        // Query to provide exact diagnostic error
-        const existing = await ContractRequest.findOne({ _id: req.params.id, providerId: req.user._id });
-        if (!existing) {
-          throw new AppError('Offer not found or unauthorized to accept', 404);
-        }
-        if (existing.status === 'accepted') {
-          throw new AppError('This offer has already been accepted', 409);
-        }
-        throw new AppError(`Cannot accept offer with status: ${existing.status}`, 400);
+        throw new AppError('Offer state changed concurrently, please retry', 409);
       }
 
       // 2. Create canonical contract
@@ -187,6 +220,38 @@ export const acceptDirectOffer = async (req, res, next) => {
           opts
         );
         contract = createdContracts[0];
+
+        // 3. Register confirmed booking in VehicleAvailability
+        if (offer.vehicleId && offer.startDate && offer.endDate) {
+          await VehicleAvailability.create(
+            [
+              {
+                vehicleId: offer.vehicleId,
+                travelListingId: offer.travelListingId,
+                contractRequestId: offer._id,
+                contractId: contract._id,
+                startDate: offer.startDate,
+                endDate: offer.endDate,
+                status: 'confirmedBooking',
+                bookedByCompanyId: offer.companyId._id || offer.companyId,
+              },
+            ],
+            opts
+          );
+
+          // Update listing slot if linked
+          if (offer.travelListingId) {
+            await TravelListing.updateOne(
+              {
+                _id: offer.travelListingId,
+                'availableDates.startDate': { $lte: offer.endDate },
+                'availableDates.endDate': { $gte: offer.startDate },
+              },
+              { $set: { 'availableDates.$.isBooked': true } },
+              opts
+            );
+          }
+        }
       } catch (err) {
         if (!session) {
           // Compensating rollback for standalone mode
@@ -292,11 +357,40 @@ export const counterDirectOffer = async (req, res, next) => {
       return next(new AppError('Unauthorized to negotiate this offer', 403));
     }
 
+    const proposedAmountPaise = Number(req.body.counterAmountPaise) || Number(req.body.proposedAmountPaise);
+    if (!proposedAmountPaise || proposedAmountPaise <= 0) {
+      return next(new AppError('Valid counter amount in paise is required', 400));
+    }
+
     offer.status = 'negotiating';
-    offer.offeredAmountPaise = req.body.counterAmountPaise;
-    offer.responseMessage = req.body.responseMessage;
+    offer.offeredAmountPaise = proposedAmountPaise;
+    if (req.body.proposedStartDate) offer.startDate = req.body.proposedStartDate;
+    if (req.body.proposedEndDate) offer.endDate = req.body.proposedEndDate;
+    offer.responseMessage = req.body.responseMessage || req.body.message || '';
     offer.respondedAt = new Date();
+
+    // Push counteroffer to negotiation history
+    offer.counterOffers.push({
+      senderId: req.user._id,
+      proposedAmountPaise,
+      proposedStartDate: req.body.proposedStartDate || offer.startDate,
+      proposedEndDate: req.body.proposedEndDate || offer.endDate,
+      message: req.body.responseMessage || req.body.message || '',
+      createdAt: new Date(),
+    });
+
     await offer.save();
+
+    // Notify the other party
+    const recipientId = isProvider ? offer.createdBy : offer.providerId;
+    createNotification({
+      userId: recipientId,
+      type: 'offerNegotiating',
+      title: 'Counteroffer received',
+      message: `${req.user.fullName || 'A party'} countered the offer for "${offer.title}" with ₹${(proposedAmountPaise / 100).toLocaleString('en-IN')}.`,
+      relatedType: 'ContractRequest',
+      relatedId: offer._id,
+    }).catch((e) => console.error('[Notifications] counterDirectOffer dispatch failed:', e.message));
 
     res.status(200).json({ status: 'success', message: 'Counter offer submitted', data: { offer } });
   } catch (error) {

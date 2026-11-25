@@ -1,5 +1,28 @@
 import mongoose from 'mongoose';
 
+const counterOfferSchema = new mongoose.Schema(
+  {
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    proposedAmountPaise: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    proposedStartDate: Date,
+    proposedEndDate: Date,
+    message: String,
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: true }
+);
+
 const contractRequestSchema = new mongoose.Schema(
   {
     requestType: {
@@ -32,6 +55,11 @@ const contractRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vehicle',
     },
+    travelListingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TravelListing',
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -51,6 +79,8 @@ const contractRequestSchema = new mongoose.Schema(
     },
     startDate: Date,
     endDate: Date,
+    passengersCount: Number,
+    cargoWeightKg: Number,
     offeredAmountPaise: {
       type: Number,
       required: true,
@@ -62,7 +92,7 @@ const contractRequestSchema = new mongoose.Schema(
     },
     pricePeriod: {
       type: String,
-      enum: ['weekly', 'monthly', 'yearly', 'total'],
+      enum: ['weekly', 'monthly', 'yearly', 'total', 'perKm', 'perDay', 'perSeat'],
       default: 'monthly',
     },
     status: {
@@ -73,12 +103,14 @@ const contractRequestSchema = new mongoose.Schema(
     },
     responseMessage: String,
     respondedAt: Date,
+    counterOffers: [counterOfferSchema],
   },
   { timestamps: true }
 );
 
 contractRequestSchema.index({ providerId: 1, status: 1, createdAt: -1 });
 contractRequestSchema.index({ companyId: 1, status: 1, createdAt: -1 });
+contractRequestSchema.index({ travelListingId: 1, status: 1 });
 
 export const ContractRequest = mongoose.model('ContractRequest', contractRequestSchema);
 export default ContractRequest;

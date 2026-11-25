@@ -17,6 +17,8 @@ import ChatMessenger from '../features/chat/ChatMessenger.jsx';
 import ContractList from '../features/contracts/ContractList.jsx';
 import CompanyLiveMap from '../features/tracking/CompanyLiveMap.jsx';
 import DriverTripTracker from '../features/tracking/DriverTripTracker.jsx';
+import TravelMarketplace from '../features/travel-marketplace/TravelMarketplace.jsx';
+import ProviderListingManager from '../features/travel-marketplace/ProviderListingManager.jsx';
 import {
   FileText,
   MessageSquare,
@@ -64,6 +66,7 @@ function CompanyDashboard() {
   const [activeTab, setActiveTab] = useState('tracking');
 
   const tabs = [
+    { id: 'marketplace', label: 'Travel & Vehicle Market', icon: Compass },
     { id: 'tracking', label: 'Live GPS Radar', icon: Radio },
     { id: 'contracts', label: 'Active Contracts', icon: FileText },
     { id: 'hiring', label: 'Direct Hiring', icon: Users },
@@ -81,6 +84,7 @@ function CompanyDashboard() {
       onTabChange={setActiveTab}
     >
       <div className="space-y-6">
+        {activeTab === 'marketplace' && <TravelMarketplace onOpenChat={() => setActiveTab('chat')} />}
         {activeTab === 'tracking' && <CompanyLiveMap />}
         {activeTab === 'contracts' && <ContractList />}
         {activeTab === 'hiring' && <DirectHiringExplorer />}
@@ -106,12 +110,13 @@ function DriverDashboard() {
 
   const tabs = [
     { id: 'trip', label: 'Live Trip GPS', icon: Radio },
-    { id: 'marketplace', label: 'Browse Contracts', icon: Compass },
-    { id: 'mybids', label: 'My Bids', icon: Briefcase },
+    { id: 'travels', label: 'My Travel Listings', icon: Compass },
+    { id: 'marketplace', label: 'Browse Contracts', icon: Briefcase },
+    { id: 'mybids', label: 'My Bids', icon: FileText },
     { id: 'offers', label: 'Direct Offers', icon: Inbox },
-    { id: 'contracts', label: 'My Contracts', icon: FileText },
+    { id: 'contracts', label: 'My Contracts', icon: FileCheck2 },
     { id: 'chat', label: 'Messages', icon: MessageSquare },
-    { id: 'compliance', label: 'Credentials', icon: FileCheck2 },
+    { id: 'compliance', label: 'Credentials', icon: ShieldCheck },
   ];
 
   return (
@@ -124,6 +129,7 @@ function DriverDashboard() {
     >
       <div className="space-y-6">
         {activeTab === 'trip' && <DriverTripTracker />}
+        {activeTab === 'travels' && <ProviderListingManager />}
         {activeTab === 'marketplace' && <BrowsePosts />}
         {activeTab === 'mybids' && <MyBids />}
         {activeTab === 'offers' && <ReceivedOffers />}
@@ -149,12 +155,13 @@ function VehicleOwnerDashboard() {
 
   const tabs = [
     { id: 'fleet', label: 'Vehicle Fleet', icon: Truck },
-    { id: 'marketplace', label: 'Tenders & Posts', icon: Compass },
-    { id: 'mybids', label: 'My Bids', icon: Briefcase },
+    { id: 'travels', label: 'My Travel Listings', icon: Compass },
+    { id: 'marketplace', label: 'Tenders & Posts', icon: Briefcase },
+    { id: 'mybids', label: 'My Bids', icon: FileText },
     { id: 'offers', label: 'Direct Requests', icon: Inbox },
-    { id: 'contracts', label: 'Contracts', icon: FileText },
+    { id: 'contracts', label: 'Contracts', icon: FileCheck2 },
     { id: 'chat', label: 'Messages', icon: MessageSquare },
-    { id: 'compliance', label: 'Permits & Docs', icon: FileCheck2 },
+    { id: 'compliance', label: 'Permits & Docs', icon: ShieldCheck },
   ];
 
   return (
@@ -167,6 +174,7 @@ function VehicleOwnerDashboard() {
     >
       <div className="space-y-6">
         {activeTab === 'fleet' && <VehicleManager />}
+        {activeTab === 'travels' && <ProviderListingManager />}
         {activeTab === 'marketplace' && <BrowsePosts />}
         {activeTab === 'mybids' && <MyBids />}
         {activeTab === 'offers' && <ReceivedOffers />}

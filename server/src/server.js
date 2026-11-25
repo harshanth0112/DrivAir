@@ -8,7 +8,7 @@ import { setNotificationSocketIO } from './modules/notifications/notifications.s
 
 const server = http.createServer(app);
 
-// Initialize Socket.IO with CORS
+// Initialize Socket.IO with strict CORS
 const io = new Server(server, {
   cors: {
     origin: env.CLIENT_URL,
